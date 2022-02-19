@@ -5,7 +5,8 @@
 # SPDX-License-Identifier: GPL-3.0
 #
 # GNU Radio Python Flow Graph
-# Title: Not titled yet
+# Title: Lab2_FmReceiver
+# Author: Robert Bambil
 # GNU Radio version: 3.8.2.0
 
 from distutils.version import StrictVersion
@@ -26,6 +27,7 @@ from gnuradio.filter import firdes
 import sip
 from gnuradio import analog
 from gnuradio import audio
+from gnuradio import blocks
 from gnuradio import filter
 from gnuradio import gr
 import sys
@@ -38,12 +40,12 @@ import iio
 
 from gnuradio import qtgui
 
-class FM_example(gr.top_block, Qt.QWidget):
+class Lab2_FmReceiver(gr.top_block, Qt.QWidget):
 
     def __init__(self):
-        gr.top_block.__init__(self, "Not titled yet")
+        gr.top_block.__init__(self, "Lab2_FmReceiver")
         Qt.QWidget.__init__(self)
-        self.setWindowTitle("Not titled yet")
+        self.setWindowTitle("Lab2_FmReceiver")
         qtgui.util.check_set_qss()
         try:
             self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
@@ -61,7 +63,7 @@ class FM_example(gr.top_block, Qt.QWidget):
         self.top_grid_layout = Qt.QGridLayout()
         self.top_layout.addLayout(self.top_grid_layout)
 
-        self.settings = Qt.QSettings("GNU Radio", "FM_example")
+        self.settings = Qt.QSettings("GNU Radio", "Lab2_FmReceiver")
 
         try:
             if StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
@@ -74,70 +76,36 @@ class FM_example(gr.top_block, Qt.QWidget):
         ##################################################
         # Variables
         ##################################################
-        self.samp_rate_0 = samp_rate_0 = 960000
-        self.CenterFreq = CenterFreq = 962000000
+        self.samp_rate = samp_rate = 2900000
+        self.fs_0 = fs_0 = 2000000
+        self.fs = fs = 89900000
 
         ##################################################
         # Blocks
         ##################################################
-        self.rational_resampler_xxx_0_0 = filter.rational_resampler_ccc(
+        self._fs_range = Range(88000000, 800000000, 1, 89900000, 200)
+        self._fs_win = RangeWidget(self._fs_range, self.set_fs, 'channel', "counter_slider", float)
+        self.top_grid_layout.addWidget(self._fs_win)
+        self.rational_resampler_xxx_0_0 = filter.rational_resampler_fff(
                 interpolation=1,
                 decimation=1,
                 taps=None,
                 fractional_bw=None)
-        self.rational_resampler_xxx_0 = filter.rational_resampler_fff(
-                interpolation=1,
-                decimation=10,
-                taps=None,
-                fractional_bw=None)
-        self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c(
+        self.qtgui_freq_sink_x_0_0 = qtgui.freq_sink_c(
             1024, #size
             firdes.WIN_BLACKMAN_hARRIS, #wintype
             0, #fc
-            30000000, #bw
-            "DownSampled", #name
-            1 #number of inputs
-        )
-        self.qtgui_waterfall_sink_x_0.set_update_time(0.10)
-        self.qtgui_waterfall_sink_x_0.enable_grid(False)
-        self.qtgui_waterfall_sink_x_0.enable_axis_labels(True)
-
-
-
-        labels = ['', '', '', '', '',
-                  '', '', '', '', '']
-        colors = [0, 0, 0, 0, 0,
-                  0, 0, 0, 0, 0]
-        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
-                  1.0, 1.0, 1.0, 1.0, 1.0]
-
-        for i in range(1):
-            if len(labels[i]) == 0:
-                self.qtgui_waterfall_sink_x_0.set_line_label(i, "Data {0}".format(i))
-            else:
-                self.qtgui_waterfall_sink_x_0.set_line_label(i, labels[i])
-            self.qtgui_waterfall_sink_x_0.set_color_map(i, colors[i])
-            self.qtgui_waterfall_sink_x_0.set_line_alpha(i, alphas[i])
-
-        self.qtgui_waterfall_sink_x_0.set_intensity_range(-140, 10)
-
-        self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.pyqwidget(), Qt.QWidget)
-        self.top_grid_layout.addWidget(self._qtgui_waterfall_sink_x_0_win)
-        self.qtgui_freq_sink_x_0_0 = qtgui.freq_sink_c(
-            2048, #size
-            firdes.WIN_BLACKMAN_hARRIS, #wintype
-            0, #fc
-            30000000, #bw
-            "", #name
+            500000, #bw
+            "Post Filter", #name
             1
         )
         self.qtgui_freq_sink_x_0_0.set_update_time(0.10)
         self.qtgui_freq_sink_x_0_0.set_y_axis(-140, 10)
         self.qtgui_freq_sink_x_0_0.set_y_label('Relative Gain', 'dB')
         self.qtgui_freq_sink_x_0_0.set_trigger_mode(qtgui.TRIG_MODE_FREE, 0.0, 0, "")
-        self.qtgui_freq_sink_x_0_0.enable_autoscale(True)
+        self.qtgui_freq_sink_x_0_0.enable_autoscale(False)
         self.qtgui_freq_sink_x_0_0.enable_grid(False)
-        self.qtgui_freq_sink_x_0_0.set_fft_average(0.2)
+        self.qtgui_freq_sink_x_0_0.set_fft_average(1.0)
         self.qtgui_freq_sink_x_0_0.enable_axis_labels(True)
         self.qtgui_freq_sink_x_0_0.enable_control_panel(False)
 
@@ -164,20 +132,20 @@ class FM_example(gr.top_block, Qt.QWidget):
         self._qtgui_freq_sink_x_0_0_win = sip.wrapinstance(self.qtgui_freq_sink_x_0_0.pyqwidget(), Qt.QWidget)
         self.top_grid_layout.addWidget(self._qtgui_freq_sink_x_0_0_win)
         self.qtgui_freq_sink_x_0 = qtgui.freq_sink_c(
-            2048, #size
+            1024, #size
             firdes.WIN_BLACKMAN_hARRIS, #wintype
             0, #fc
-            30000000, #bw
-            "", #name
+            500000, #bw
+            "Input", #name
             1
         )
         self.qtgui_freq_sink_x_0.set_update_time(0.10)
         self.qtgui_freq_sink_x_0.set_y_axis(-140, 10)
         self.qtgui_freq_sink_x_0.set_y_label('Relative Gain', 'dB')
         self.qtgui_freq_sink_x_0.set_trigger_mode(qtgui.TRIG_MODE_FREE, 0.0, 0, "")
-        self.qtgui_freq_sink_x_0.enable_autoscale(True)
+        self.qtgui_freq_sink_x_0.enable_autoscale(False)
         self.qtgui_freq_sink_x_0.enable_grid(False)
-        self.qtgui_freq_sink_x_0.set_fft_average(0.2)
+        self.qtgui_freq_sink_x_0.set_fft_average(1.0)
         self.qtgui_freq_sink_x_0.enable_axis_labels(True)
         self.qtgui_freq_sink_x_0.enable_control_panel(False)
 
@@ -204,63 +172,72 @@ class FM_example(gr.top_block, Qt.QWidget):
         self._qtgui_freq_sink_x_0_win = sip.wrapinstance(self.qtgui_freq_sink_x_0.pyqwidget(), Qt.QWidget)
         self.top_grid_layout.addWidget(self._qtgui_freq_sink_x_0_win)
         self.low_pass_filter_0 = filter.fir_filter_ccf(
-            1,
+            7,
             firdes.low_pass(
                 1,
-                samp_rate_0*4,
-                100000,
-                10e3,
+                samp_rate,
+                44e3,
+                44e3,
                 firdes.WIN_HAMMING,
                 6.76))
-        self.iio_pluto_source_1 = iio.pluto_source('ip:192.168.2.1', 89100000, samp_rate_0*4, 2000000, 32768, True, True, True, 'manual', 64, '', True)
+        self.iio_pluto_source_0 = iio.pluto_source('ip:192.168.2.1', fs, samp_rate, 10000000, 16324, True, True, True, 'manual', 70, '', True)
+        self._fs_0_range = Range(1000000, 80000000, 1, 2000000, 200)
+        self._fs_0_win = RangeWidget(self._fs_0_range, self.set_fs_0, 'tester', "counter_slider", float)
+        self.top_grid_layout.addWidget(self._fs_0_win)
+        self.blocks_wavfile_sink_0 = blocks.wavfile_sink('/home/gnuradio/Documents/EE466/EE466_Spring2022/FMOutput.wav', 1, 48000, 8)
+        self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(1)
         self.audio_sink_0 = audio.sink(48000, '', True)
         self.analog_wfm_rcv_0 = analog.wfm_rcv(
-        	quad_rate=96000*2,
-        	audio_decimation=1,
+        	quad_rate=650e3,
+        	audio_decimation=8,
         )
-        self._CenterFreq_range = Range(70000000, 6000000000, 100, 962000000, 1000)
-        self._CenterFreq_win = RangeWidget(self._CenterFreq_range, self.set_CenterFreq, 'Choose Central Frequency', "counter_slider", float)
-        self.top_grid_layout.addWidget(self._CenterFreq_win)
 
 
 
         ##################################################
         # Connections
         ##################################################
-        self.connect((self.analog_wfm_rcv_0, 0), (self.rational_resampler_xxx_0, 0))
-        self.connect((self.iio_pluto_source_1, 0), (self.qtgui_freq_sink_x_0_0, 0))
-        self.connect((self.iio_pluto_source_1, 0), (self.rational_resampler_xxx_0_0, 0))
+        self.connect((self.analog_wfm_rcv_0, 0), (self.rational_resampler_xxx_0_0, 0))
+        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.audio_sink_0, 0))
+        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.blocks_wavfile_sink_0, 0))
+        self.connect((self.iio_pluto_source_0, 0), (self.low_pass_filter_0, 0))
+        self.connect((self.iio_pluto_source_0, 0), (self.qtgui_freq_sink_x_0, 0))
         self.connect((self.low_pass_filter_0, 0), (self.analog_wfm_rcv_0, 0))
-        self.connect((self.low_pass_filter_0, 0), (self.qtgui_freq_sink_x_0, 0))
-        self.connect((self.low_pass_filter_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
-        self.connect((self.rational_resampler_xxx_0, 0), (self.audio_sink_0, 0))
-        self.connect((self.rational_resampler_xxx_0_0, 0), (self.low_pass_filter_0, 0))
+        self.connect((self.low_pass_filter_0, 0), (self.qtgui_freq_sink_x_0_0, 0))
+        self.connect((self.rational_resampler_xxx_0_0, 0), (self.blocks_multiply_const_vxx_0, 0))
 
 
     def closeEvent(self, event):
-        self.settings = Qt.QSettings("GNU Radio", "FM_example")
+        self.settings = Qt.QSettings("GNU Radio", "Lab2_FmReceiver")
         self.settings.setValue("geometry", self.saveGeometry())
         event.accept()
 
-    def get_samp_rate_0(self):
-        return self.samp_rate_0
+    def get_samp_rate(self):
+        return self.samp_rate
 
-    def set_samp_rate_0(self, samp_rate_0):
-        self.samp_rate_0 = samp_rate_0
-        self.iio_pluto_source_1.set_params(89100000, self.samp_rate_0*4, 2000000, True, True, True, 'manual', 64, '', True)
-        self.low_pass_filter_0.set_taps(firdes.low_pass(1, self.samp_rate_0*4, 100000, 10e3, firdes.WIN_HAMMING, 6.76))
+    def set_samp_rate(self, samp_rate):
+        self.samp_rate = samp_rate
+        self.iio_pluto_source_0.set_params(self.fs, self.samp_rate, 10000000, True, True, True, 'manual', 70, '', True)
+        self.low_pass_filter_0.set_taps(firdes.low_pass(1, self.samp_rate, 44e3, 44e3, firdes.WIN_HAMMING, 6.76))
 
-    def get_CenterFreq(self):
-        return self.CenterFreq
+    def get_fs_0(self):
+        return self.fs_0
 
-    def set_CenterFreq(self, CenterFreq):
-        self.CenterFreq = CenterFreq
+    def set_fs_0(self, fs_0):
+        self.fs_0 = fs_0
+
+    def get_fs(self):
+        return self.fs
+
+    def set_fs(self, fs):
+        self.fs = fs
+        self.iio_pluto_source_0.set_params(self.fs, self.samp_rate, 10000000, True, True, True, 'manual', 70, '', True)
 
 
 
 
 
-def main(top_block_cls=FM_example, options=None):
+def main(top_block_cls=Lab2_FmReceiver, options=None):
 
     if StrictVersion("4.5.0") <= StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
         style = gr.prefs().get_string('qtgui', 'style', 'raster')

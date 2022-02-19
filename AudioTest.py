@@ -74,7 +74,7 @@ class AudioTest(gr.top_block, Qt.QWidget):
         ##################################################
         # Blocks
         ##################################################
-        self.blocks_wavfile_source_0 = blocks.wavfile_source("/home/gnuradio/Downloads/Oh no! Our table it's broken....wav", True)
+        self.blocks_wavfile_source_0 = blocks.wavfile_source('/home/gnuradio/Downloads/FMOutput.wav', True)
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(0.2)
         self.audio_sink_0 = audio.sink(48000, '', True)
 
